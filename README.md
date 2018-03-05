@@ -8,7 +8,7 @@
 接口定义：
 
     public interface RetrofitService {
-    //https://api.douban.com/v2/book/search?q=金瓶梅&tag=&start=0&count=1
+    //https://api.douban.com/v2/book/search?q=西游记&tag=&start=0&count=1
     @GET("book/search")
     Observable<Book> getSearchBook(@Query("q") String name,
                                    @Query("tag") String tag,
