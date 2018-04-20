@@ -1,30 +1,46 @@
 package com.liuh.mvplearn.service.presenter;
 
-import android.content.Intent;
+import com.liuh.mvplearn.service.RetrofitHelper;
+import com.liuh.mvplearn.service.RetrofitService;
 
-import com.liuh.mvplearn.ui.iview.MView;
+import io.reactivex.Observable;
+import io.reactivex.disposables.CompositeDisposable;
+import io.reactivex.observers.DisposableObserver;
+import io.reactivex.schedulers.Schedulers;
+import io.reactivex.android.schedulers.AndroidSchedulers;
 
 /**
  * Created by huan on 2017/11/14 10:38.
  */
 
-public interface BasePresenter {
+public abstract class BasePresenter<V> {
 
-    void onCreate();
+    //CompositeDisposable是用来存放RxJava中的订阅关系,
+    //请求完数据要及时清掉这个订阅关系，不然会发生内存泄漏
+    private CompositeDisposable mCompositeDisposable = new CompositeDisposable();
 
-    void onStart();
+    protected RetrofitService retrofitService = RetrofitHelper.getRetrofitInstance().create(RetrofitService.class);
 
-    void onStop();
+    protected V mView;
 
-    void onPause();
+    public BasePresenter(V mView) {
+        this.mView = mView;
+    }
 
-    /**
-     * 用于绑定我们自己的View
-     *
-     * @param view
-     */
-    void attachView(MView view);
+    public void addSubscription(Observable<? extends Object> observable, DisposableObserver observer) {
+        if (mCompositeDisposable == null) {
+            mCompositeDisposable = new CompositeDisposable();
+        }
+        observable.subscribeOn(Schedulers.io())
+                .observeOn(AndroidSchedulers.mainThread())
+                .subscribe(observer);
+        mCompositeDisposable.add(observer);
+    }
 
-    void attachIncomingIntent(Intent intent);
+    public void detachView() {
+        if (mCompositeDisposable != null) {
+            mCompositeDisposable.dispose();
+        }
+    }
 
 }

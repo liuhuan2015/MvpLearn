@@ -1,93 +1,44 @@
 package com.liuh.mvplearn.service.presenter;
 
-import android.content.Context;
-import android.content.Intent;
 
 import com.liuh.mvplearn.service.entity.Book;
-import com.liuh.mvplearn.service.manager.DataManager;
 import com.liuh.mvplearn.ui.iview.BookView;
-import com.liuh.mvplearn.ui.iview.MView;
 
-import rx.Observer;
-import rx.android.schedulers.AndroidSchedulers;
-import rx.schedulers.Schedulers;
-import rx.subscriptions.CompositeSubscription;
+import io.reactivex.observers.DisposableObserver;
 
 /**
  * Created by huan on 2017/11/14 10:42.
  */
 
-public class BookPresenter implements BasePresenter {
-    private DataManager mDataManager;
-    private Context mContext;
-    private BookView mBookView;
-    private Book mBook;
-    //CompositeSubscription是用来存放RxJava中的订阅关系,
-    //请求完数据要及时清掉这个订阅关系，不然会发生内存泄漏
-    private CompositeSubscription mCompositeSubscription;
+public class BookPresenter extends BasePresenter<BookView> {
 
-
-    public BookPresenter(Context mContext) {
-        this.mContext = mContext;
-    }
-
-    @Override
-    public void onCreate() {
-        mDataManager = new DataManager(mContext);
-        mCompositeSubscription = new CompositeSubscription();
-
-    }
-
-    @Override
-    public void onStart() {
-
-    }
-
-    @Override
-    public void onStop() {
-        if (mCompositeSubscription.hasSubscriptions()) {
-            mCompositeSubscription.unsubscribe();
-        }
-    }
-
-    @Override
-    public void onPause() {
-
-    }
-
-    @Override
-    public void attachView(MView view) {
-        mBookView = (BookView) view;
-    }
-
-    @Override
-    public void attachIncomingIntent(Intent intent) {
-
+    public BookPresenter(BookView mView) {
+        super(mView);
     }
 
     public void getSearchBooks(String name, String tag, int start, int count) {
-        mCompositeSubscription.add(mDataManager.getSearchBooks(name, tag, start, count)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Book>() {
-                    @Override
-                    public void onCompleted() {
-                        if (mBook != null) {
-                            mBookView.onSuccess(mBook);
-                        }
-                    }
 
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-                        mBookView.onError("请求失败 " + e.getMessage());
-                    }
+        addSubscription(retrofitService.getSearchBook(name, tag, start, count), new DisposableObserver<Book>() {
 
-                    @Override
-                    public void onNext(Book book) {
-                        mBook = book;
-                    }
-                }));
+
+            @Override
+            public void onNext(Book book) {
+                if (book != null) {
+                    mView.onSuccess(book);
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                e.printStackTrace();
+                mView.onError("请求失败 " + e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
 
     }
 

@@ -19,8 +19,6 @@ public class MainActivity extends AppCompatActivity implements BookView {
         setContentView(R.layout.activity_main);
         tvContent = (TextView) findViewById(R.id.tv_content);
 
-        mBookPresenter.onCreate();
-        mBookPresenter.attachView(this);
         mBookPresenter.getSearchBooks("西游记", null, 0, 1);
     }
 
@@ -33,5 +31,11 @@ public class MainActivity extends AppCompatActivity implements BookView {
     @Override
     public void onError(String result) {
         tvContent.setText(result);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        mBookPresenter.detachView();
     }
 }

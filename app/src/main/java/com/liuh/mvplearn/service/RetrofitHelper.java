@@ -1,12 +1,10 @@
 package com.liuh.mvplearn.service;
 
-import android.content.Context;
-
 import com.google.gson.GsonBuilder;
 
 import okhttp3.OkHttpClient;
 import retrofit2.Retrofit;
-import retrofit2.adapter.rxjava.RxJavaCallAdapterFactory;
+import retrofit2.adapter.rxjava2.RxJava2CallAdapterFactory;
 import retrofit2.converter.gson.GsonConverterFactory;
 
 /**
@@ -14,36 +12,23 @@ import retrofit2.converter.gson.GsonConverterFactory;
  */
 
 public class RetrofitHelper {
-    private Context mContext;
-    OkHttpClient mOkHttpClient = new OkHttpClient();
-    private Retrofit mRetrofit = null;
+    private static Retrofit mRetrofit = null;
 
-
-    private static RetrofitHelper instance;
-
-    private RetrofitHelper(Context context) {
-        this.mContext = context;
-        init();
+    private RetrofitHelper() {
     }
 
-    public static RetrofitHelper getInstance(Context context) {
-        if (instance == null) {
-            instance = new RetrofitHelper(context);
+    public static Retrofit getRetrofitInstance() {
+        if (mRetrofit == null) {
+            OkHttpClient.Builder mBuild = new OkHttpClient.Builder();//使用这个mBuild可以做一些对请求进行拦截的事情
+            OkHttpClient mOkHttpClient = mBuild.build();
+            mRetrofit = new Retrofit.Builder()
+                    .baseUrl("https://api.douban.com/v2/")
+                    .client(mOkHttpClient)
+                    .addConverterFactory(GsonConverterFactory.create(new GsonBuilder().create()))
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())//支持Rxjava
+                    .build();
         }
-
-        return instance;
+        return mRetrofit;
     }
 
-    private void init() {
-        mRetrofit = new Retrofit.Builder()
-                .baseUrl("https://api.douban.com/v2/")
-                .client(mOkHttpClient)
-                .addConverterFactory(GsonConverterFactory.create(new GsonBuilder().create()))
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())//支持Rxjava
-                .build();
-    }
-
-    public RetrofitService getService() {
-        return mRetrofit.create(RetrofitService.class);
-    }
 }
