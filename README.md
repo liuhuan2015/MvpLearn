@@ -18,55 +18,55 @@
     
 retrofit初始化配置
 
-     private void init() {
-        mRetrofit = new Retrofit.Builder()
-                .baseUrl("https://api.douban.com/v2/")
-                .client(mOkHttpClient)
-                .addConverterFactory(GsonConverterFactory.create(new GsonBuilder().create()))
-                .addCallAdapterFactory(RxJavaCallAdapterFactory.create())//支持Rxjava
-                .build();
-    }
-    public RetrofitService getService() {
-        return mRetrofit.create(RetrofitService.class);
+    public static Retrofit getRetrofitInstance() {
+        if (mRetrofit == null) {
+            OkHttpClient.Builder mBuild = new OkHttpClient.Builder();//使用这个mBuild可以做一些对请求进行拦截的事情
+            OkHttpClient mOkHttpClient = mBuild.build();
+            mRetrofit = new Retrofit.Builder()
+                    .baseUrl("https://api.douban.com/v2/")
+                    .client(mOkHttpClient)
+                    .addConverterFactory(GsonConverterFactory.create(new GsonBuilder().create()))
+                    .addCallAdapterFactory(RxJava2CallAdapterFactory.create())//支持Rxjava
+                    .build();
+        }
+        return mRetrofit;
     }
     
 发起网络请求
 
-    public class DataManager {
-    private RetrofitService mRetrofitService;
+MainActivity中部分代码：
+    
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        tvContent = (TextView) findViewById(R.id.tv_content);
 
-    public DataManager(Context context) {
-        this.mRetrofitService = RetrofitHelper.getInstance(context).getService();
-    }
-
-    public Observable<Book> getSearchBooks(String name, String tag, int start, int count) {
-        return mRetrofitService.getSearchBook(name, tag, start, count);
-      }
+        mBookPresenter.getSearchBooks("西游记", null, 0, 1);
     }
     
 Presenter中的代码
 
-    public void getSearchBooks(String name, String tag, int start, int count) {
-        mCompositeSubscription.add(mDataManager.getSearchBooks(name, tag, start, count)
-                .subscribeOn(Schedulers.io())
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe(new Observer<Book>() {
-                    @Override
-                    public void onCompleted() {
-                        if (mBook != null) {
-                            mBookView.onSuccess(mBook);
-                        }
-                    }
+    addSubscription(retrofitService.getSearchBook(name, tag, start, count), new DisposableObserver<Book>() {
 
-                    @Override
-                    public void onError(Throwable e) {
-                        e.printStackTrace();
-                        mBookView.onError("请求失败 " + e.getMessage());
-                    }
 
-                    @Override
-                    public void onNext(Book book) {
-                        mBook = book;
-                    }
-                }));
+            @Override
+            public void onNext(Book book) {
+                if (book != null) {
+                    mView.onSuccess(book);
+                }
+            }
+
+            @Override
+            public void onError(Throwable e) {
+                e.printStackTrace();
+                mView.onError("请求失败 " + e.getMessage());
+            }
+
+            @Override
+            public void onComplete() {
+
+            }
+        });
+
     }
